@@ -127,6 +127,16 @@ pub fn start() -> Result<(), JsValue> {
     // Input
     install_input_handlers(&window, &document, app.clone())?;
 
+    // Give the canvas focus on click so key events behave more predictably.
+    {
+        let canvas2 = canvas.clone();
+        let onclick = Closure::<dyn FnMut(_)>::new(move |_e: web_sys::MouseEvent| {
+            let _ = canvas2.focus();
+        });
+        canvas.add_event_listener_with_callback("click", onclick.as_ref().unchecked_ref())?;
+        onclick.forget();
+    }
+
     // Render loop
     {
         let w = window.clone();
@@ -176,11 +186,11 @@ fn install_input_handlers(
         let app = app.clone();
         let onkeydown = Closure::<dyn FnMut(_)>::new(move |e: KeyboardEvent| {
             let mut inp = app.input.borrow_mut();
-            match e.key().as_str() {
-                "w" | "W" => inp.up = true,
-                "s" | "S" => inp.down = true,
-                "a" | "A" => inp.left = true,
-                "d" | "D" => inp.right = true,
+            match e.code().as_str() {
+                "KeyW" => { inp.up = true; e.prevent_default(); }
+                "KeyS" => { inp.down = true; e.prevent_default(); }
+                "KeyA" => { inp.left = true; e.prevent_default(); }
+                "KeyD" => { inp.right = true; e.prevent_default(); }
                 _ => {}
             }
         });
@@ -191,11 +201,11 @@ fn install_input_handlers(
         let app = app.clone();
         let onkeyup = Closure::<dyn FnMut(_)>::new(move |e: KeyboardEvent| {
             let mut inp = app.input.borrow_mut();
-            match e.key().as_str() {
-                "w" | "W" => inp.up = false,
-                "s" | "S" => inp.down = false,
-                "a" | "A" => inp.left = false,
-                "d" | "D" => inp.right = false,
+            match e.code().as_str() {
+                "KeyW" => { inp.up = false; e.prevent_default(); }
+                "KeyS" => { inp.down = false; e.prevent_default(); }
+                "KeyA" => { inp.left = false; e.prevent_default(); }
+                "KeyD" => { inp.right = false; e.prevent_default(); }
                 _ => {}
             }
         });
