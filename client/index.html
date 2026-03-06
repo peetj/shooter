@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>shooter</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #0b0f14; color: #d7e0ea; font-family: system-ui, sans-serif; }
+      #hud { position: fixed; left: 12px; top: 10px; font-size: 14px; opacity: 0.85; }
+      canvas { display: block; width: 100vw; height: 100vh; }
+    </style>
+  </head>
+  <body>
+    <div id="hud">Connecting…</div>
+    <canvas id="game"></canvas>
+    <script type="module">
+      import init from "./pkg/shooter_client.js";
+      init();
+    </script>
+  </body>
+</html>

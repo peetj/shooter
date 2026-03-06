@@ -1,0 +1,6 @@
+[build]
+target = "index.html"
+
+[[proxy]]
+backend = "http://127.0.0.1:3000"
+ws = true

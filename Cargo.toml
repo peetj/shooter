@@ -1,0 +1,16 @@
+[workspace]
+resolver = "2"
+members = [
+  "shared",
+  "server",
+  "client",
+]
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+postcard = { version = "1", default-features = false, features = ["use-std"] }
+thiserror = "1"
