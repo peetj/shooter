@@ -125,47 +125,48 @@ async fn handle_socket(state: AppState, mut socket: WebSocket) {
         .send(Message::Binary(encode_s2c(&S2c::Welcome { client_id })))
         .await;
 
-    // Writer task
-    let mut socket_tx = socket.clone();
-    let writer = tokio::spawn(async move {
-        while let Some(msg) = rx.recv().await {
-            if socket_tx.send(msg).await.is_err() {
-                break;
-            }
-        }
-    });
-
-    // Reader loop
-    while let Some(Ok(msg)) = socket.recv().await {
-        match msg {
-            Message::Binary(bytes) => match decode_c2s(&bytes) {
-                Ok(C2s::Input(input)) => {
-                    // MVP movement: apply directly server-side.
-                    let speed_mm_per_input = 80; // very rough
-                    let mut inner = state.inner.lock().unwrap();
-                    if let Some(p) = inner.players.get_mut(&client_id) {
-                        let mut dx = 0;
-                        let mut dy = 0;
-                        if input.left {
-                            dx -= 1
+    // Drive both reading (client->server) and writing (server->client) without cloning the socket.
+    loop {
+        tokio::select! {
+            maybe_out = rx.recv() => {
+                match maybe_out {
+                    Some(msg) => {
+                        if socket.send(msg).await.is_err() {
+                            break;
                         }
-                        if input.right {
-                            dx += 1
-                        }
-                        if input.up {
-                            dy -= 1
-                        }
-                        if input.down {
-                            dy += 1
-                        }
-                        p.x_mm += dx * speed_mm_per_input;
-                        p.y_mm += dy * speed_mm_per_input;
                     }
+                    None => break,
                 }
-                Err(e) => warn!(client_id, error=%e, "bad C2S message"),
-            },
-            Message::Close(_) => break,
-            _ => {}
+            }
+            maybe_in = socket.recv() => {
+                match maybe_in {
+                    Some(Ok(msg)) => {
+                        match msg {
+                            Message::Binary(bytes) => match decode_c2s(&bytes) {
+                                Ok(C2s::Input(input)) => {
+                                    // MVP movement: apply directly server-side.
+                                    let speed_mm_per_input = 80; // very rough
+                                    let mut inner = state.inner.lock().unwrap();
+                                    if let Some(p) = inner.players.get_mut(&client_id) {
+                                        let mut dx = 0;
+                                        let mut dy = 0;
+                                        if input.left { dx -= 1 }
+                                        if input.right { dx += 1 }
+                                        if input.up { dy -= 1 }
+                                        if input.down { dy += 1 }
+                                        p.x_mm += dx * speed_mm_per_input;
+                                        p.y_mm += dy * speed_mm_per_input;
+                                    }
+                                }
+                                Err(e) => warn!(client_id, error=%e, "bad C2S message"),
+                            },
+                            Message::Close(_) => break,
+                            _ => {}
+                        }
+                    }
+                    _ => break,
+                }
+            }
         }
     }
 
@@ -177,5 +178,4 @@ async fn handle_socket(state: AppState, mut socket: WebSocket) {
     }
 
     info!(client_id, "client disconnected");
-    writer.abort();
 }
