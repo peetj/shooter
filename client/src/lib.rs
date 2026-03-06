@@ -60,8 +60,10 @@ pub fn start() -> Result<(), JsValue> {
 
     // Connect
     let loc = window.location();
-    let host = loc.host()?;
-    let ws_url = format!("ws://{host}/ws");
+    let hostname = loc.hostname()?;
+    // MVP: assume server runs on :3000 in dev.
+    // (Avoids needing Trunk proxy config.)
+    let ws_url = format!("ws://{hostname}:3000/ws");
     let ws = WebSocket::new(&ws_url)?;
     ws.set_binary_type(web_sys::BinaryType::Arraybuffer);
 
@@ -105,7 +107,7 @@ pub fn start() -> Result<(), JsValue> {
     // Render loop
     {
         let window = window.clone();
-        let f = Rc::new(RefCell::new(None));
+        let f: Rc<RefCell<Option<Closure<dyn FnMut()>>>> = Rc::new(RefCell::new(None));
         let g = f.clone();
         let app2 = app.clone();
 
