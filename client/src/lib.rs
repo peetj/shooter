@@ -106,27 +106,27 @@ pub fn start() -> Result<(), JsValue> {
 
     // Render loop
     {
-        let window = window.clone();
+        let w = window.clone();
         let f: Rc<RefCell<Option<Closure<dyn FnMut()>>>> = Rc::new(RefCell::new(None));
         let g = f.clone();
         let app2 = app.clone();
 
         *g.borrow_mut() = Some(Closure::<dyn FnMut()>::new(move || {
-            resize_canvas(&window, &app2.canvas);
+            resize_canvas(&w, &app2.canvas);
             draw(&app2);
 
             // Send input at ~60fps.
             send_input(&app2);
 
-            window
-                .request_animation_frame(
-                    f.borrow().as_ref().unwrap().as_ref().unchecked_ref(),
-                )
-                .unwrap();
+            w.request_animation_frame(
+                f.borrow().as_ref().unwrap().as_ref().unchecked_ref(),
+            )
+            .unwrap();
         }));
 
         window.request_animation_frame(g.borrow().as_ref().unwrap().as_ref().unchecked_ref())?;
-        g.borrow().as_ref().unwrap().forget();
+        // Leak the closure (standard wasm pattern) so it lives forever.
+        let _ = g.borrow_mut().take().unwrap().forget();
     }
 
     APP.with(|a| *a.borrow_mut() = Some(app));
