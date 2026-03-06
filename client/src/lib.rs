@@ -94,11 +94,20 @@ pub fn start() -> Result<(), JsValue> {
                             app.hud.set_inner_text(&format!("Connected as #{client_id} (waiting for snapshots…)"));
                         }
                         S2c::Snapshot(s) => {
+                            let me = app.me.borrow().unwrap_or(0);
+                            let me_pos = s
+                                .players
+                                .iter()
+                                .find(|p| p.id == me)
+                                .map(|p| format!("({}, {})mm", p.x_mm, p.y_mm))
+                                .unwrap_or_else(|| "(missing)".to_string());
+
                             app.hud.set_inner_text(&format!(
-                                "Connected as #{} | tick {} | players {}",
-                                app.me.borrow().unwrap_or(0),
+                                "Connected as #{} | tick {} | players {} | me {}",
+                                me,
                                 s.tick,
-                                s.players.len()
+                                s.players.len(),
+                                me_pos,
                             ));
                             *app.last_snapshot.borrow_mut() = Some(s);
                         }

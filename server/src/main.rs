@@ -156,6 +156,12 @@ async fn handle_socket(state: AppState, mut socket: WebSocket) {
                                         if input.down { dy += 1 }
                                         p.x_mm += dx * speed_mm_per_input;
                                         p.y_mm += dy * speed_mm_per_input;
+
+                                        // Clamp to arena bounds (matches client draw: 1000x600 px, 10mm per px).
+                                        let half_w_mm = 5000;
+                                        let half_h_mm = 3000;
+                                        p.x_mm = p.x_mm.clamp(-half_w_mm, half_w_mm);
+                                        p.y_mm = p.y_mm.clamp(-half_h_mm, half_h_mm);
                                     }
                                 }
                                 Err(e) => warn!(client_id, error=%e, "bad C2S message"),
