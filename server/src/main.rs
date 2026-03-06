@@ -34,6 +34,7 @@ struct Player {
     x_mm: i32,
     y_mm: i32,
     hp: u16,
+    last_input_seq: u32,
 }
 
 #[tokio::main]
@@ -62,6 +63,7 @@ async fn main() -> anyhow::Result<()> {
                             x_mm: p.x_mm,
                             y_mm: p.y_mm,
                             hp: p.hp,
+                            last_input_seq: p.last_input_seq,
                         })
                         .collect::<Vec<_>>();
 
@@ -113,6 +115,7 @@ async fn handle_socket(state: AppState, mut socket: WebSocket) {
                 x_mm: 0,
                 y_mm: 0,
                 hp: 100,
+                last_input_seq: 0,
             },
         );
         id
@@ -148,6 +151,8 @@ async fn handle_socket(state: AppState, mut socket: WebSocket) {
                                     let speed_mm_per_input = 80; // very rough
                                     let mut inner = state.inner.lock().unwrap();
                                     if let Some(p) = inner.players.get_mut(&client_id) {
+                                        p.last_input_seq = input.seq;
+
                                         let mut dx = 0;
                                         let mut dy = 0;
                                         if input.left { dx -= 1 }

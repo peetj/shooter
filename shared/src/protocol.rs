@@ -43,6 +43,8 @@ pub struct PlayerState {
     pub x_mm: i32,
     pub y_mm: i32,
     pub hp: u16,
+    /// Last input sequence number received by the server for this player.
+    pub last_input_seq: u32,
 }
 
 pub fn encode_c2s(msg: &C2s) -> Vec<u8> {

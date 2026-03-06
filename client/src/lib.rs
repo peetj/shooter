@@ -95,19 +95,31 @@ pub fn start() -> Result<(), JsValue> {
                         }
                         S2c::Snapshot(s) => {
                             let me = app.me.borrow().unwrap_or(0);
-                            let me_pos = s
+                            let me_info = s
                                 .players
                                 .iter()
                                 .find(|p| p.id == me)
-                                .map(|p| format!("({}, {})mm", p.x_mm, p.y_mm))
+                                .map(|p| format!("({}, {})mm seq{}", p.x_mm, p.y_mm, p.last_input_seq))
                                 .unwrap_or_else(|| "(missing)".to_string());
 
+                            let seq = *app.seq.borrow();
+                            let inp = *app.input.borrow();
+                            let keys = format!(
+                                "{}{}{}{}",
+                                if inp.up {"W"} else {"-"},
+                                if inp.left {"A"} else {"-"},
+                                if inp.down {"S"} else {"-"},
+                                if inp.right {"D"} else {"-"},
+                            );
+
                             app.hud.set_inner_text(&format!(
-                                "Connected as #{} | tick {} | players {} | me {}",
+                                "Connected as #{} | tick {} | players {} | me {} | sent seq{} keys {}",
                                 me,
                                 s.tick,
                                 s.players.len(),
-                                me_pos,
+                                me_info,
+                                seq,
+                                keys,
                             ));
                             *app.last_snapshot.borrow_mut() = Some(s);
                         }
