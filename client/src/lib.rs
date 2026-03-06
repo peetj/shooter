@@ -82,19 +82,33 @@ pub fn start() -> Result<(), JsValue> {
     {
         let app = app.clone();
         let onmessage = Closure::<dyn FnMut(_)>::new(move |ev: web_sys::MessageEvent| {
-            if let Ok(buf) = ev.data().dyn_into::<js_sys::ArrayBuffer>() {
+            let data = ev.data();
+
+            // Expect ArrayBuffer for ws binary messages.
+            if let Ok(buf) = data.dyn_into::<js_sys::ArrayBuffer>() {
                 let bytes = js_sys::Uint8Array::new(&buf).to_vec();
-                if let Ok(msg) = decode_s2c(&bytes) {
-                    match msg {
+                match decode_s2c(&bytes) {
+                    Ok(msg) => match msg {
                         S2c::Welcome { client_id } => {
                             *app.me.borrow_mut() = Some(client_id);
-                            app.hud.set_inner_text(&format!("Connected as #{client_id}"));
+                            app.hud.set_inner_text(&format!("Connected as #{client_id} (waiting for snapshots…)"));
                         }
                         S2c::Snapshot(s) => {
+                            app.hud.set_inner_text(&format!(
+                                "Connected as #{} | tick {} | players {}",
+                                app.me.borrow().unwrap_or(0),
+                                s.tick,
+                                s.players.len()
+                            ));
                             *app.last_snapshot.borrow_mut() = Some(s);
                         }
+                    },
+                    Err(e) => {
+                        web_sys::console::log_1(&format!("decode_s2c error: {e}").into());
                     }
                 }
+            } else {
+                web_sys::console::log_1(&"WS message was not an ArrayBuffer".into());
             }
         });
         ws.set_onmessage(Some(onmessage.as_ref().unchecked_ref()));
